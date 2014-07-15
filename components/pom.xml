@@ -32,6 +32,7 @@
     <module>nexus-bootstrap</module>
     <module>nexus-client-core</module>
     <module>nexus-configuration-model</module>
+    <module>nexus-orient</module>
     <module>nexus-core</module>
     <module>nexus-csrfguard</module>
     <module>nexus-ehcache</module>

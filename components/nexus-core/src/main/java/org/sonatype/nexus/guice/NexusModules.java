@@ -16,6 +16,7 @@ import java.util.Map;
 
 import javax.servlet.ServletContext;
 
+import org.sonatype.nexus.internal.orient.OrientModule;
 import org.sonatype.nexus.web.TemplateRenderer;
 import org.sonatype.nexus.web.WebResourceBundle;
 import org.sonatype.nexus.web.internal.BaseUrlHolderFilter;
@@ -36,7 +37,6 @@ import org.eclipse.sisu.inject.DefaultRankingFunction;
 import org.eclipse.sisu.inject.RankingFunction;
 import org.eclipse.sisu.wire.ParameterKeys;
 import org.osgi.framework.Bundle;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.name.Names.named;
 
@@ -57,6 +57,7 @@ public class NexusModules
     protected void configure() {
       install(new ShiroAopModule());
       install(new InstrumentationModule());
+      install(new OrientModule());
     }
   }
 

@@ -25,6 +25,7 @@ import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
 import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.events.EventSubscriberHost;
+import org.sonatype.nexus.internal.orient.OrientBootstrap;
 import org.sonatype.nexus.plugins.NexusPluginManager;
 import org.sonatype.nexus.plugins.PluginManagerResponse;
 import org.sonatype.nexus.proxy.events.NexusInitializedEvent;
@@ -41,7 +42,6 @@ import org.sonatype.sisu.goodies.lifecycle.LifecycleSupport;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -69,12 +69,15 @@ public class NxApplication
   private final RepositoryRegistry repositoryRegistry;
 
   private final EventSubscriberHost eventSubscriberHost;
+  
+  private final OrientBootstrap orientBootstrap;
 
   @Inject
   public NxApplication(final EventBus eventBus, final NexusConfiguration nexusConfiguration,
       final NexusPluginManager nexusPluginManager, final ApplicationStatusSource applicationStatusSource,
       final SecuritySystem securitySystem, final NexusScheduler nexusScheduler,
-      final RepositoryRegistry repositoryRegistry, final EventSubscriberHost eventSubscriberHost)
+      final RepositoryRegistry repositoryRegistry, final EventSubscriberHost eventSubscriberHost, 
+      final OrientBootstrap orientBootstrap)
   {
     this.eventBus = checkNotNull(eventBus);
     this.applicationStatusSource = checkNotNull(applicationStatusSource);
@@ -84,26 +87,9 @@ public class NxApplication
     this.nexusScheduler = checkNotNull(nexusScheduler);
     this.repositoryRegistry = checkNotNull(repositoryRegistry);
     this.eventSubscriberHost = checkNotNull(eventSubscriberHost);
+    this.orientBootstrap = checkNotNull(orientBootstrap);
 
     logInitialized();
-
-    log.info("Activating locally installed plugins...");
-    final Collection<PluginManagerResponse> activationResponse = this.nexusPluginManager.activateInstalledPlugins();
-    for (PluginManagerResponse response : activationResponse) {
-      if (response.isSuccessful()) {
-        log.info(response.formatAsString(log.isDebugEnabled()));
-      }
-      else {
-        log.warn(response.formatAsString(log.isDebugEnabled()));
-      }
-    }
-
-    // register core and plugin contributed subscribers, start dispatching events to them
-    eventSubscriberHost.startup();
-
-    applicationStatusSource.setState(SystemState.STOPPED);
-    applicationStatusSource.getSystemStatus().setInitializedAt(new Date());
-    eventBus.post(new NexusInitializedEvent(this));
   }
 
   @VisibleForTesting
@@ -124,7 +110,29 @@ public class NxApplication
   }
 
   @Override
-  protected void doStart() {
+  protected void doStart() throws Exception {
+    log.info("Activating locally installed plugins...");
+    final Collection<PluginManagerResponse> activationResponse = this.nexusPluginManager.activateInstalledPlugins();
+    for (PluginManagerResponse response : activationResponse) {
+      if (response.isSuccessful()) {
+        log.info(response.formatAsString(log.isDebugEnabled()));
+      }
+      else {
+        log.warn(response.formatAsString(log.isDebugEnabled()));
+      }
+    }
+
+    // register core and plugin contributed subscribers, start dispatching events to them
+    eventSubscriberHost.startup();
+
+    applicationStatusSource.setState(SystemState.STOPPED);
+    applicationStatusSource.getSystemStatus().setInitializedAt(new Date());
+    
+    // HACK: Must start database services manually
+    orientBootstrap.start();
+    
+    eventBus.post(new NexusInitializedEvent(this));
+
     applicationStatusSource.getSystemStatus().setState(SystemState.STARTING);
     try {
       // force configuration load, validation and probable upgrade if needed
@@ -186,7 +194,7 @@ public class NxApplication
   }
 
   @Override
-  protected void doStop() {
+  protected void doStop() throws Exception {
     applicationStatusSource.getSystemStatus().setState(SystemState.STOPPING);
     // Due to no dependency mechanism in NX for components, we need to fire off a hint about shutdown first
     eventBus.post(new NexusStoppingEvent(this));
@@ -196,6 +204,10 @@ public class NxApplication
     eventSubscriberHost.shutdown();
     nexusConfiguration.dropInternals();
     securitySystem.stop();
+
+    // HACK: Must stop database services manually
+    orientBootstrap.stop();
+
     applicationStatusSource.getSystemStatus().setState(SystemState.STOPPED);
     log.info("Stopped {}", getNexusNameForLogs());
   }
