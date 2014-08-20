@@ -10,6 +10,8 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+/*global Ext, NX*/
+
 /**
  * Abstract Master/Detail panel.
  *
@@ -18,10 +20,8 @@
 Ext.define('NX.view.masterdetail.Panel', {
   extend: 'Ext.panel.Panel',
   alias: 'widget.nx-masterdetail-panel',
-
-  require: [
-    'NX.view.Info',
-    'NX.view.InfoPanel'
+  requires: [
+    'NX.Icons'
   ],
 
   layout: 'border',
@@ -30,6 +30,9 @@ Ext.define('NX.view.masterdetail.Panel', {
     xtype: 'nx-info-panel'
   },
 
+  /**
+   * @override
+   */
   initComponent: function () {
     var me = this;
 

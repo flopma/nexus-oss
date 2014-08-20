@@ -10,6 +10,8 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+/*global Ext, NX*/
+
 /**
  * Search controller.
  *
@@ -60,8 +62,12 @@ Ext.define('NX.coreui.controller.Search', {
         file: 'magnifier.png',
         variants: ['x16', 'x32']
       },
-      'search-result-default': {
+      'search-component': {
         file: 'box_front.png',
+        variants: ['x16', 'x32']
+      },
+      'search-component-detail': {
+        file: 'box_front_open.png',
         variants: ['x16', 'x32']
       },
       'search-folder': {
@@ -79,7 +85,10 @@ Ext.define('NX.coreui.controller.Search', {
       mode: 'browse',
       group: true,
       iconName: 'search-folder',
-      weight: 500
+      weight: 500,
+      visible: function() {
+        return NX.Permissions.check('nexus:repositories', 'read');
+      }
     });
 
     me.getSearchFilterStore().each(function(model) {
@@ -92,7 +101,10 @@ Ext.define('NX.coreui.controller.Search', {
           view: { xtype: 'nx-searchfeature', searchFilter: model, bookmarkEnding: '' },
           iconName: 'search-default',
           weight: 20,
-          expanded: false
+          expanded: false,
+          visible: function() {
+            return NX.Permissions.check('nexus:repositories', 'read');
+          }
         });
       }
       else {
@@ -102,13 +114,19 @@ Ext.define('NX.coreui.controller.Search', {
           view: { xtype: 'nx-searchfeature', searchFilter: model, bookmarkEnding: '/' + model.getId() },
           iconName: 'search-default',
           description: model.get('description'),
-          authenticationRequired: false
+          authenticationRequired: false,
+          visible: function() {
+            return NX.Permissions.check('nexus:repositories', 'read');
+          }
         });
       }
     });
 
     me.listen({
       controller: {
+        '#Refresh': {
+          refresh: me.onRefresh
+        },
         '#Bookmarking': {
           navigate: me.navigateTo
         }
@@ -122,7 +140,8 @@ Ext.define('NX.coreui.controller.Search', {
         },
         'nx-searchfeature component[searchCriteria=true]': {
           search: me.onSearchCriteriaChange,
-          searchcleared: me.onSearchCriteriaChange
+          searchcleared: me.onSearchCriteriaChange,
+          removed: me.removeCriteria
         },
         'nx-coreui-search-result-list': {
           selectionchange: me.onSearchResultSelectionChange
@@ -137,11 +156,27 @@ Ext.define('NX.coreui.controller.Search', {
           click: me.saveSearchFilter
         },
         'nx-main #quicksearch': {
+          afterrender: me.bindQuickSearch,
           search: me.onQuickSearch,
           searchcleared: me.onQuickSearch
         }
       }
     });
+  },
+
+  /**
+   * @private
+   * Show quick search when user has 'nexus:repositories:read' permission.
+   */
+  bindQuickSearch: function(quickSearch) {
+    quickSearch.up('panel').mon(
+        NX.Conditions.isPermitted('nexus:repositories', 'read'),
+        {
+          satisfied: quickSearch.show,
+          unsatisfied: quickSearch.hide,
+          scope: quickSearch
+        }
+    );
   },
 
   /**
@@ -176,7 +211,7 @@ Ext.define('NX.coreui.controller.Search', {
         && Ext.String.endsWith(NX.Bookmarks.getBookmark().segments[0], 'search' + searchPanel.bookmarkEnding)) {
       Ext.Array.each(Ext.Array.slice(bookmarkSegments, 1), function(segment) {
         var split = segment.split('=');
-        if (split.length == 2) {
+        if (split.length === 2) {
           bookmarkValues[split[0]] = decodeURIComponent(split[1]);
         }
       });
@@ -236,6 +271,8 @@ Ext.define('NX.coreui.controller.Search', {
       menu: addCriteriaMenu
     });
 
+    // HACK: fire a fake event to force paging toolbar to refresh
+    me.getSearchResultStore().fireEvent('load', me);
     me.getSearchResultStore().filter();
   },
 
@@ -247,17 +284,33 @@ Ext.define('NX.coreui.controller.Search', {
   addCriteria: function(menuitem) {
     var me = this,
         searchPanel = me.getSearchFeature(),
-        searchCriteria = searchPanel.down('#criteria'),
-        addButton = searchCriteria.down('#addButton'),
+        searchCriteriaPanel = searchPanel.down('#criteria'),
+        addButton = searchCriteriaPanel.down('#addButton'),
         criteria = menuitem.criteria,
         cmpClass = Ext.ClassManager.getByAlias('widget.nx-searchcriteria-' + criteria.getId());
 
     if (!cmpClass) {
       cmpClass = Ext.ClassManager.getByAlias('widget.nx-searchcriteria-text');
     }
-    searchCriteria.remove(addButton, false);
-    searchCriteria.add(cmpClass.create(Ext.apply(criteria.get('config'), { criteriaId: criteria.getId() })));
-    searchCriteria.add(addButton);
+    searchCriteriaPanel.remove(addButton, false);
+    searchCriteriaPanel.add(cmpClass.create(
+        Ext.apply(criteria.get('config'), { criteriaId: criteria.getId(), removable: true })
+    ));
+    searchCriteriaPanel.add(addButton);
+  },
+
+  /**
+   * @private
+   * Remove a criteria.
+   * @param searchCriteria removed search criteria
+   */
+  removeCriteria: function(searchCriteria) {
+    var me = this,
+        searchPanel = me.getSearchFeature(),
+        searchCriteriaPanel = searchPanel.down('#criteria');
+
+    me.applyFilter({ criteriaId: searchCriteria.criteriaId }, true);
+    searchCriteriaPanel.remove(searchCriteria);
   },
 
   /**
@@ -268,6 +321,18 @@ Ext.define('NX.coreui.controller.Search', {
   onSearchCriteriaChange: function(searchCriteria) {
     var me = this;
     me.applyFilter(searchCriteria, true);
+  },
+
+  /**
+   * @private
+   * Search on refresh.
+   */
+  onRefresh: function() {
+    var me = this;
+
+    if (me.getSearchFeature()) {
+      me.getSearchResultStore().filter();
+    }
   },
 
   /**
@@ -319,17 +384,15 @@ Ext.define('NX.coreui.controller.Search', {
         searchResultModel = selected[0],
         searchResultVersion = me.getSearchResultVersion(),
         searchResultDetails = me.getSearchResultDetails(),
-        searchResultVersionStore = me.getSearchResultVersionStore(),
-        segments;
+        searchResultVersionStore = me.getSearchResultVersionStore();
 
     me.onSearchResultVersionSelectionChange(me.getSearchResultVersion().getSelectionModel(), []);
     if (searchResultModel) {
-      segments = searchResultModel.getId().split(':');
       searchResultDetails.items.get(0).hide();
       searchResultDetails.items.get(1).show();
-      searchResultDetails.items.get(1).showInfo({
-        'Group': searchResultModel.get('group'),
-        'Name': searchResultModel.get('name'),
+      searchResultDetails.items.get(1).items.get(1).showInfo({
+        'Group': searchResultModel.get('groupId'),
+        'Name': searchResultModel.get('artifactId'),
         'Format': searchResultModel.get('format')
       });
       searchResultVersion.show();
@@ -338,11 +401,11 @@ Ext.define('NX.coreui.controller.Search', {
       searchResultVersionStore.addFilter([
         {
           property: 'groupid',
-          value: segments[0]
+          value: searchResultModel.get('groupId')
         },
         {
           property: 'artifactid',
-          value: segments[1]
+          value: searchResultModel.get('artifactId')
         }
       ]);
     }
@@ -366,11 +429,14 @@ Ext.define('NX.coreui.controller.Search', {
 
     if (searchResultVersionModel) {
       storageFileContainer.showStorageFile(
-          searchResultVersionModel.get('repositoryId'), searchResultVersionModel.get('path')
+          searchResultVersionModel.get('repositoryId'),
+          searchResultVersionModel.get('path'),
+          searchResultVersionModel.get('type')
       );
+      storageFileContainer.expand();
     }
     else {
-      storageFileContainer.showStorageFile(undefined, undefined);
+      storageFileContainer.showStorageFile();
     }
   },
 
@@ -399,7 +465,7 @@ Ext.define('NX.coreui.controller.Search', {
         id: cmp.criteriaId,
         value: cmp.getValue(),
         hidden: cmp.hidden
-      })
+      });
     });
 
     model = me.getSearchFilterModel().create(Ext.apply(values, {

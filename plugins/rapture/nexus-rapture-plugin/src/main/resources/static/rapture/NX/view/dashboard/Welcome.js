@@ -10,6 +10,7 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+/*global Ext, NX*/
 
 /**
  * Welcome dashboard.
@@ -17,8 +18,12 @@
  * @since 3.0
  */
 Ext.define('NX.view.dashboard.Welcome', {
-  extend: 'Ext.Panel',
+  extend: 'Ext.panel.Panel',
   alias: 'widget.nx-dashboard-welcome',
+  requires: [
+    'NX.State',
+    'NX.util.Url'
+  ],
 
   layout: {
     type: 'vbox',
@@ -26,28 +31,50 @@ Ext.define('NX.view.dashboard.Welcome', {
     pack: 'start'
   },
 
-  items: [
-    {
-      xtype: 'image',
-      cls: 'nx-icon-nexus-x100',
-      style: {
-        margin: '100px 0 0 0'
-      }
-    },
-    {
-      xtype: 'label',
-      html: '<code>' +
-          'Nexus <em>' + NX.State.getValue('status')['edition'] + '</em> ' +
-          NX.State.getValue('status')['version'] +
-          '</code>',
+  /**
+   * @override
+   */
+  initComponent: function () {
+    var me = this;
 
-      style: {
-        'color': '#000000',
-        'font-size': '20px',
-        'font-weight': 'bold',
-        'text-align': 'center',
-        'padding': '20px'
+    me.items = [
+      //NOTE: Using custom welcome icon for milestones
+      //{
+      //  xtype: 'image',
+      //  cls: 'nx-icon-nexus-x100',
+      //  style: {
+      //    margin: '100px 0 0 0'
+      //  }
+      //},
+      {
+        xtype: 'image',
+        src: NX.util.Url.urlOf('/static/rapture/resources/images/nexus-milestone.png'), // 160x130
+        height: 130,
+        width: 160,
+        autoEl: 'div',
+        style: {
+          'text-align': 'center',
+          'vertical-align': 'middle',
+          margin: '100px 0 0 0'
+        }
+      },
+      {
+        xtype: 'label',
+        html: '<code>' +
+            'Nexus <em>' + NX.State.getValue('status')['edition'] + '</em> ' +
+            NX.State.getValue('status')['version'] +
+            '</code>',
+
+        style: {
+          'color': '#000000',
+          'font-size': '20px',
+          'font-weight': 'bold',
+          'text-align': 'center',
+          'padding': '20px'
+        }
       }
-    }
-  ]
+    ];
+
+    me.callParent();
+  }
 });

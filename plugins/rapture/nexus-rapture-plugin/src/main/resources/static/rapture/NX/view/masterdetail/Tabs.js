@@ -10,6 +10,8 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+/*global Ext, NX*/
+
 /**
  * Master/Detail tabs.
  *
@@ -18,10 +20,17 @@
 Ext.define('NX.view.masterdetail.Tabs', {
   extend: 'Ext.panel.Panel',
   alias: 'widget.nx-masterdetail-tabs',
+  requires: [
+    'NX.Icons',
+    'NX.Bookmarks'
+  ],
 
   // HACK: For now make all detail panels light themed while we sort out the overall look of rapture
-  ui: 'feature-detail',
+  //ui: 'feature-detail',
 
+  /**
+   * @override
+   */
   initComponent: function () {
     var me = this,
         content = me.tabs;
@@ -64,7 +73,6 @@ Ext.define('NX.view.masterdetail.Tabs', {
       xtype: 'tabpanel',
       activeTab: 0,
       layoutOnTabChange: true,
-      plain: true,
       flex: 1,
       items: items
     };

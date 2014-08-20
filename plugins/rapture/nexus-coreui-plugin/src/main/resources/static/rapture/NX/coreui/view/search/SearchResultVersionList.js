@@ -10,6 +10,8 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+/*global Ext, NX*/
+
 /**
  * Versions / search results grid.
  *
@@ -31,22 +33,29 @@ Ext.define('NX.coreui.view.search.SearchResultVersionList', {
       width: 36,
       iconVariant: 'x16',
       iconNamePrefix: 'repository-item-type-',
-      iconName: function(value) {
+      iconName: function (value) {
         if (NX.getApplication().getIconController().findIcon('repository-item-type-' + value, 'x16')) {
           return value;
         }
         return 'default';
       }
     },
-    { header: 'Version', dataIndex: 'version', flex: 1 },
-    { header: 'Name', dataIndex: 'name', flex: 3 },
+    {
+      header: 'Version',
+      dataIndex: 'versionOrder',
+      flex: 1,
+      renderer: function (value, metadata, model) {
+        return model.get('version');
+      }
+    },
+    { header: 'Name', dataIndex: 'name', flex: 2.5 },
     { header: 'Repository', dataIndex: 'repositoryName', flex: 1 }
   ],
 
   features: [
     {
       ftype: 'grouping',
-      groupHeaderTpl: '{[values.name === "" ? "No " + values.columnName : values.name + " " + values.columnName]}'
+      groupHeaderTpl: '{columnName}: {name}'
     }
   ]
 

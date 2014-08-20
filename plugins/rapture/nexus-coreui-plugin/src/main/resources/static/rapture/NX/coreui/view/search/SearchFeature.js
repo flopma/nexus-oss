@@ -10,13 +10,15 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+/*global Ext, NX*/
+
 /**
  * Search feature.
  *
  * @since 3.0
  */
 Ext.define('NX.coreui.view.search.SearchFeature', {
-  extend: 'Ext.Panel',
+  extend: 'Ext.panel.Panel',
   alias: 'widget.nx-searchfeature',
 
   layout: 'border',
@@ -54,22 +56,25 @@ Ext.define('NX.coreui.view.search.SearchFeature', {
         items: [
           {
             xtype: 'nx-coreui-search-result-list',
-            region: 'center',
-            flex: 0.3
+            region: 'west',
+            flex: 0.3,
+            header: false,
+            split: true,
+            collapsible: true,
+            collapseMode: 'mini'
           },
           {
             xtype: 'panel',
             itemId: 'rightPanel',
-            region: 'east',
+            region: 'center',
             layout: 'border',
             flex: 0.7,
             header: false,
-            split: true,
-            collapsible: false,
             items: [
               {
                 xtype: 'panel',
                 region: 'center',
+                layout: 'fit',
                 flex: 0.5,
                 items: [
                   {
@@ -85,7 +90,9 @@ Ext.define('NX.coreui.view.search.SearchFeature', {
                         itemId: 'searchResultDetails',
                         xtype: 'panel',
                         layout: {
-                          type: 'vbox'
+                          type: 'vbox',
+                          align: 'stretch',
+                          pack: 'start'
                         },
                         items: [
                           {
@@ -99,7 +106,8 @@ Ext.define('NX.coreui.view.search.SearchFeature', {
                       },
                       {
                         xtype: 'nx-coreui-search-result-version-list',
-                        hidden: true
+                        hidden: true,
+                        flex: 1
                       }
                     ]
                   }
@@ -110,7 +118,6 @@ Ext.define('NX.coreui.view.search.SearchFeature', {
                 region: 'south',
                 split: true,
                 flex: 0.5,
-                header: false,
                 collapsible: true,
                 collapsed: false,
                 collapseMode: 'mini',

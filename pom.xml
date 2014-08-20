@@ -622,6 +622,8 @@
               <Include-Resource>
                 /=${project.build.outputDirectory},{maven-resources}
               </Include-Resource>
+              <!-- clear default to avoid spurious !* warnings -->
+              <Private-Package/>
             </instructions>
           </configuration>
         </plugin>
@@ -645,6 +647,7 @@
               <id>activation</id>
               <id>javax.annotation</id>
               <id>javax.annotation-api</id>
+              <id>javax.ws.rs</id>
               <id>jsr250-api</id>
               <id>jsr305</id>
               <id>slf4j-api</id>
@@ -676,9 +679,9 @@
           <configuration>
             <excludes combine.children="append">
               <!--
-              Exclude appended resources, which are used to tweak settings in the assembly.
+              Exclude assembly overlay files
               -->
-              <exclude>**/assemblies/**/appended-resources/**</exclude>
+              <exclude>**/assemblies/**/src/main/resources/overlay/**</exclude>
 
               <!--
               Exclude test resource files, many of these need specific content w/o headers.
@@ -800,9 +803,9 @@
                     Ban apis which are part of Java 6.
                     -->
                     <!--<exclude>*:activation</exclude>-->
-                    <exclude>*:stax-api</exclude>
+                    <!--<exclude>*:stax-api</exclude>-->
                     <!--<exclude>*:jaxb-api</exclude>-->
-                    <exclude>*:xml-apis</exclude>
+                    <!--<exclude>*:xml-apis</exclude>-->
 
                     <!--
                     Ban junit which includes old, or improper hamcrest.
@@ -860,6 +863,11 @@
                     <exclude>org.bouncycastle:*-jdk15:*</exclude>
                     <exclude>bouncycastle:*-jdk14:*</exclude>
                     <exclude>bouncycastle:*-jdk15:*</exclude>
+
+                    <!--
+                    Ban snappy-java as there are lingering issues on OSGi when restarting.
+                    -->
+                    <exclude>org.xerial.snappy:snappy-java:*</exclude>
                   </excludes>
 
                   <!--

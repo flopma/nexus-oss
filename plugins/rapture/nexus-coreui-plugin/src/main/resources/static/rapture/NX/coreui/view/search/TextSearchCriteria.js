@@ -10,6 +10,8 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+/*global Ext, NX*/
+
 /**
  * Generic text search criteria.
  *
@@ -22,20 +24,52 @@ Ext.define('NX.coreui.view.search.TextSearchCriteria', {
     searchCriteria: 'NX.coreui.view.search.SearchCriteria'
   },
 
+  /**
+   * @cfg [removable=false] If search criteria should be removable.
+   */
+  removable: false,
+
   emptyText: 'any',
 
   padding: '0 5 0 0',
   width: 100,
   labelAlign: 'top',
   labelSeparator: '',
-  searchDelay: 1000,
 
-  filter: function () {
+  filter: function() {
     var me = this;
     if (me.value) {
       return { property: me.criteriaId, value: me.value };
     }
     return undefined;
+  },
+
+  initComponent: function() {
+    var me = this;
+
+    if (me.removable) {
+      me.trigger2Cls = 'nx-form-fa-minus-circle-trigger';
+    }
+
+    me.callParent(arguments);
+
+    me.addEvents(
+        /**
+         * @event removed
+         * Fires when search criteria is removed.
+         */
+        'removed'
+    );
+  },
+
+  /**
+   * @private
+   * Fire event about user removing the search criteria.
+   */
+  onTrigger2Click: function() {
+    var me = this;
+
+    me.fireEvent('removed', me);
   }
 
 });

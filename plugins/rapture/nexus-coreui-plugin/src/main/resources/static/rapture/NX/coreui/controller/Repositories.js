@@ -10,6 +10,8 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+/*global Ext, NX*/
+
 /**
  * Repositories controller.
  *
@@ -72,7 +74,7 @@ Ext.define('NX.coreui.controller.Repositories', {
       variants: ['x16', 'x32']
     },
     visible: function() {
-      return NX.Permissions.check('nexus:repositories', 'read');
+      return NX.Permissions.check('nexus:repositories', 'read') && NX.State.getUser();
     }
   },
   permission: 'nexus:repositories',
@@ -325,7 +327,7 @@ Ext.define('NX.coreui.controller.Repositories', {
     var me = this,
         description = me.getDescription(model);
 
-    NX.direct.coreui_Repository.delete(model.getId(), function(response) {
+    NX.direct.coreui_Repository.delete_(model.getId(), function(response) {
       me.loadStore();
       if (Ext.isObject(response) && response.success) {
         NX.Messages.add({
@@ -345,7 +347,7 @@ Ext.define('NX.coreui.controller.Repositories', {
     if (me.statusProvider) {
       me.statusProvider.disconnect();
     }
-    me.statusProvider = Ext.Direct.addProvider({
+    me.statusProvider = Ext.direct.Manager.addProvider({
       type: 'polling',
       url: NX.direct.api.POLLING_URLS.coreui_Repository_readStatus,
       interval: 5000,
@@ -377,13 +379,13 @@ Ext.define('NX.coreui.controller.Repositories', {
   },
 
   /**
-   * Start / Stop status pooling when server is diconnected/connected.
-   * @param receiving if we are receiving or not status from server (server connected/diconnected)
+   * Start / Stop status pooling when server is disconnected/connected.
+   * @param receiving if we are receiving or not status from server (server connected/disconnected)
    */
   onStateReceivingChanged: function(receiving) {
     var me = this;
 
-    if (receiving) {
+    if (me.getList() && receiving) {
       me.startStatusPolling();
     }
     else {
@@ -456,7 +458,7 @@ Ext.define('NX.coreui.controller.Repositories', {
         list = me.getList();
 
     NX.Bookmarks.navigateTo(NX.Bookmarks.fromSegments([
-      'browse/repository/standard', list.getSelectionModel().getSelection()[0].getId()
+      'browse/repository/standard', list.getSelectionModel().getSelection()[0].getId(), '/'
     ]));
   },
 

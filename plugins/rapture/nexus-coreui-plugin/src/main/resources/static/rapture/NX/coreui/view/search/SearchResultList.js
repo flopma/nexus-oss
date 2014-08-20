@@ -10,6 +10,8 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+/*global Ext, NX*/
+
 /**
  * Search results grid.
  *
@@ -29,7 +31,7 @@ Ext.define('NX.coreui.view.search.SearchResultList', {
       width: 36,
       iconVariant: 'x16',
       iconName: function () {
-        return 'search-result-default';
+        return 'search-component';
       }
     },
     { header: 'Component', dataIndex: 'id', flex: 1 },

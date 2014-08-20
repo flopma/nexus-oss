@@ -12,7 +12,7 @@
     Eclipse Foundation. All other trademarks are the property of their respective owners.
 
 -->
-<features name="nexus">
+<features>
   <feature name="${project.artifactId}" description="Nexus base installation">
     <!--
     Wrappers that require use of fragments
